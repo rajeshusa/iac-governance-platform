@@ -255,7 +255,7 @@ def analyze_with_ai(report: GovernanceReport) -> dict:
     prompt = build_analysis_prompt(report)
 
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-opus-4-5",
         max_tokens=1500,
         system=SYSTEM_PROMPT,
         messages=[
