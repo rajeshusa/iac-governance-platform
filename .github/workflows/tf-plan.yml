@@ -94,6 +94,11 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: terraform/environments/${{ matrix.environment }}
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_db_password }}
+          TF_VAR_db_kms_key_arn: "alias/aws/rds"
+          TF_VAR_s3_kms_key_arn: "alias/aws/s3"
+          TF_VAR_app_ami_id: "ami-0abcdef1234567890"
         run: |
           terraform plan \
             -input=false \
