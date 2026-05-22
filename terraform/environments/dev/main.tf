@@ -13,7 +13,7 @@ terraform {
 
   # Remote state — S3 backend with DynamoDB locking
   backend "s3" {
-    bucket         = "my-org-terraform-state"
+    bucket         = "my-org-terraform-state-910896516483"
     key            = "environments/dev/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
