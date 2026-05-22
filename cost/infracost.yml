@@ -1,0 +1,20 @@
+# cost/infracost.yml
+# Infracost configuration for cost governance
+
+version: 0.1
+
+projects:
+  - path: terraform/environments/dev
+    name: dev
+    terraform_var_files:
+      - terraform.tfvars
+
+  - path: terraform/environments/staging
+    name: staging
+    terraform_var_files:
+      - terraform.tfvars
+
+  - path: terraform/environments/prod
+    name: prod
+    terraform_var_files:
+      - terraform.tfvars

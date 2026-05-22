@@ -1,0 +1,25 @@
+# CODEOWNERS
+# Defines required reviewers per directory path
+# GitHub enforces these as required PR approvals
+
+# Default owner for everything not matched below
+*                                    @platform-engineering
+
+# All Terraform changes require platform team review
+terraform/                           @platform-engineering
+
+# Production changes require SRE + Security sign-off
+terraform/environments/prod/         @sre-team @security-team @platform-engineering
+
+# Staging requires SRE review
+terraform/environments/staging/      @sre-team @platform-engineering
+
+# Security policy changes require security team
+security/                            @security-team
+policies/                            @security-team @platform-engineering
+
+# AI summarizer changes require both platform + security review
+ai-summarizer/                       @platform-engineering @security-team
+
+# GitHub Actions workflow changes require platform review
+.github/                             @platform-engineering

@@ -1,0 +1,163 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "1.7.0"
+
+jobs:
+  detect-changes:
+    name: Detect Changed Environments
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.changed.outputs.environments }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed environments
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1...HEAD \
+            | grep '^terraform/environments/' \
+            | cut -d'/' -f3 \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "environments=${CHANGED}" >> $GITHUB_OUTPUT
+
+  # Apply dev automatically, staging/prod require approval
+  apply:
+    name: Apply (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.environments != '[]'
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.detect-changes.outputs.environments) }}
+      max-parallel: 1  # Never apply environments in parallel
+    # GitHub Environment gates:
+    # - dev: no approval required
+    # - staging: 1 approver
+    # - prod: 2 approvers + 30 min wait
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', upper(matrix.environment))] }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: terraform/environments/${{ matrix.environment }}
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        id: apply
+        working-directory: terraform/environments/${{ matrix.environment }}
+        run: |
+          terraform apply \
+            -input=false \
+            -auto-approve \
+            -var-file="terraform.tfvars" \
+            2>&1 | tee apply-output.txt
+
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Post apply result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const env = '${{ matrix.environment }}';
+            const success = '${{ steps.apply.outputs.exit_code }}' === '0';
+
+            // Find the PR that merged this commit
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha
+            });
+
+            if (prs.data.length === 0) return;
+            const prNumber = prs.data[0].number;
+
+            const body = `## ${success ? '✅' : '❌'} Terraform Apply — \`${env}\`
+
+            **Status:** ${success ? 'Applied successfully' : 'Apply FAILED — manual intervention required'}
+            **Commit:** \`${{ github.sha }}\`
+            **Applied by:** @${{ github.actor }}
+            **Time:** ${new Date().toISOString()}
+
+            ${!success ? '> ⚠️ Check the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for error details.' : ''}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+  # ────────────────────────────────────────────────
+  # Nightly drift detection
+  # ────────────────────────────────────────────────
+  drift-detection:
+    name: Drift Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', upper(matrix.environment))] }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: terraform/environments/${{ matrix.environment }}
+        run: terraform init -input=false
+
+      - name: Detect drift
+        id: drift
+        working-directory: terraform/environments/${{ matrix.environment }}
+        run: |
+          # Exit code 2 = drift detected, 0 = no changes
+          terraform plan -detailed-exitcode -input=false \
+            -var-file="terraform.tfvars" \
+            -out=drift-plan 2>&1
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Alert on drift
+        if: steps.drift.outputs.exit_code == '2'
+        run: |
+          echo "::warning::Drift detected in ${{ matrix.environment }}!"
+          # In production: post to Slack, create PagerDuty alert, etc.

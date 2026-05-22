@@ -1,0 +1,53 @@
+# security/.checkov.yml
+# Checkov configuration for the IaC Governance Platform
+
+directory:
+  - terraform/
+
+framework:
+  - terraform
+  - terraform_plan
+
+output:
+  - json
+  - cli
+
+# Checks to run — mapped to CIS AWS Foundations Benchmark
+check:
+  - CKV_AWS_8    # Ensure IMDSv2 is required on EC2
+  - CKV_AWS_18   # Ensure S3 access logging is enabled
+  - CKV_AWS_19   # Ensure S3 bucket has server-side encryption
+  - CKV_AWS_20   # Ensure S3 bucket is not public
+  - CKV_AWS_21   # Ensure S3 versioning is enabled
+  - CKV_AWS_23   # Ensure RDS is not publicly accessible
+  - CKV_AWS_24   # Ensure no hardcoded credentials in Terraform
+  - CKV_AWS_25   # Ensure no open security group to all
+  - CKV_AWS_26   # Ensure SQS is encrypted
+  - CKV_AWS_28   # Ensure Elasticsearch is encrypted
+  - CKV_AWS_57   # Ensure S3 bucket has block public acls
+  - CKV_AWS_66   # Ensure CloudWatch log group is encrypted
+  - CKV_AWS_79   # Ensure EC2 uses EBS encryption
+  - CKV_AWS_83   # Ensure no ELB is internet facing
+  - CKV_AWS_86   # Ensure ELB access logging is enabled
+  - CKV_AWS_91   # Ensure DynamoDB point-in-time recovery
+  - CKV_AWS_111  # Ensure IAM policies are not overly permissive
+  - CKV_AWS_118  # Ensure ECR image scanning is enabled
+  - CKV_AWS_130  # Ensure VPC subnets do not auto-assign public IPs
+  - CKV2_AWS_6   # Ensure S3 has block public policy
+  - CKV2_AWS_11  # Ensure VPC has flow logging
+  - CKV2_AWS_12  # Ensure default security group restricts all traffic
+
+# Suppress known accepted risks with justification
+skip-check:
+  # CKV_AWS_144: Cross-region S3 replication — not required for dev/staging
+  - CKV_AWS_144
+
+# Soft fail: report findings but don't exit non-zero
+# The AI summarizer decides the final gate decision
+soft-fail: true
+
+# Compact output in CI
+compact: true
+
+# Baseline to suppress already-acknowledged findings
+# baseline: .checkov.baseline
