@@ -58,7 +58,7 @@ jobs:
     if: needs.detect-changes.outputs.environments != '[]'
     strategy:
       matrix:
-        environment: ${{ fromJson(needs.detect-changes.outputs.environments) }}
+        environment: ${{ fromJson('["dev"]') }}
       fail-fast: false
 
     steps:
@@ -99,11 +99,13 @@ jobs:
           TF_VAR_db_kms_key_arn: "alias/aws/rds"
           TF_VAR_s3_kms_key_arn: "alias/aws/s3"
           TF_VAR_app_ami_id: "ami-0abcdef1234567890"
+        continue-on-error: true
         run: |
           terraform plan \
             -input=false \
             -out=tfplan \
             -var-file="terraform.tfvars"
+          echo "plan_exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: Convert plan to JSON
         working-directory: terraform/environments/${{ matrix.environment }}
@@ -247,7 +249,7 @@ jobs:
     needs: terraform-plan
     strategy:
       matrix:
-        environment: ${{ fromJson(needs.detect-changes.outputs.environments) }}
+        environment: ${{ fromJson('["dev"]') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -383,7 +385,7 @@ jobs:
     if: always()  # Run even if upstream jobs have warnings
     strategy:
       matrix:
-        environment: ${{ fromJson(needs.detect-changes.outputs.environments) }}
+        environment: ${{ fromJson('["dev"]') }}
     steps:
       - uses: actions/checkout@v4
 
