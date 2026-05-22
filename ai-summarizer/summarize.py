@@ -216,10 +216,13 @@ def build_analysis_prompt(report: GovernanceReport) -> str:
     cost_section = "  Not available"
     if report.cost:
         sign = "+" if report.cost.monthly_diff >= 0 else ""
+        before = report.cost.monthly_cost_before
+        after = report.cost.monthly_cost_after
+        diff = report.cost.monthly_diff
         cost_section = (
-            f"  Before: ${report.cost.monthly_cost_before:.2f}/mo\n"
-            f"  After:  ${report.cost.monthly_cost_after:.2f}/mo\n"
-            f"  Delta:  {sign}${report.cost.monthly_diff:.2f}/mo"
+            "  Before: ${:.2f}/mo\n  After:  ${:.2f}/mo\n  Delta:  {}${:.2f}/mo".format(
+                before, after, sign, diff
+            )
         )
 
     return f"""Analyze this Terraform PR for environment: **{report.environment.upper()}**
@@ -306,7 +309,7 @@ def format_pr_comment(report: GovernanceReport, analysis: dict, environment: str
         sev_emoji = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(f.get("severity", ""), "⚪")
         findings_rows += (
             f"| {sev_emoji} {f.get('severity')} | {f.get('category')} | "
-            f"{f.get('finding')} | {f.get('recommendation')} |\n"
+            "{} | {} |\n".format(f.get('finding'), f.get('recommendation'))
         )
 
     # Required approvers
