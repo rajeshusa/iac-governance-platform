@@ -124,6 +124,7 @@ jobs:
 
       - name: Parse plan summary
         id: plan-summary
+        continue-on-error: true
         working-directory: terraform/environments/${{ matrix.environment }}
         run: |
           ADDS=$(cat tfplan.json | jq '[.resource_changes[]? | select(.change.actions[] == "create")] | length')
