@@ -57,7 +57,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', upper(matrix.environment))] }}
+          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', matrix.environment)] }}
           aws-region: us-east-1
 
       - name: Setup Terraform
@@ -133,7 +133,7 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', upper(matrix.environment))] }}
+          role-to-assume: ${{ secrets[format('AWS_ROLE_{0}', matrix.environment)] }}
           aws-region: us-east-1
 
       - name: Setup Terraform

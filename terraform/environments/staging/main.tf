@@ -12,7 +12,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "my-org-terraform-state"
+    bucket         = "my-org-terraform-state-910896516483"
     key            = "environments/staging/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
