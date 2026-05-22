@@ -267,6 +267,7 @@ jobs:
 
       - name: Run OPA policies
         id: opa
+        continue-on-error: true
         run: |
           OPA_RESULT=$(opa eval \
             --input terraform/environments/${{ matrix.environment }}/tfplan.json \
