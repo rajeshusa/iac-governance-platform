@@ -336,7 +336,7 @@ def format_pr_comment(report: GovernanceReport, analysis: dict, environment: str
 ### Top Findings
 | Severity | Category | Finding | Recommendation |
 |---|---|---|---|
-{findings_rows or '| ⚪ NONE | — | No significant findings | — |\n'}
+{findings_rows or '| ⚪ NONE | — | No significant findings | — |'}
 
 ### Change Statistics
 | | Count |
