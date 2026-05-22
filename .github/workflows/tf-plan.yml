@@ -38,6 +38,13 @@ jobs:
             | cut -d'/' -f3 \
             | sort -u \
             | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+
+          if [ "${CHANGED}" = "[]" ] || [ -z "${CHANGED}" ]; then
+            CHANGED='["dev"]'
+            echo "No specific environment changes detected — defaulting to dev"
+          fi
+
           echo "environments=${CHANGED}" >> $GITHUB_OUTPUT
           echo "Changed environments: ${CHANGED}"
 
